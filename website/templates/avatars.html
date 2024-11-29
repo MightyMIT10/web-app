@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Influencer - Avatars</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .avatar-counts {
+            color: #adb5bd;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+        }
+        .pagination-container {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">AI Influencer</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/avatars">
+                            Avatars
+                            {% if total_avatars is defined and total_talking_photos is defined %}
+                            <span class="avatar-counts">
+                                ({{ total_avatars }} AI Avatars | {{ total_talking_photos }} Talking Photos)
+                            </span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/submit">Create Video</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/videos">My Videos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/submit">Submit</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        {% if not error %}
+            {% if avatars %}
+                <!-- Avatars Section -->
+                <h2 class="mb-4">AI Avatars</h2>
+                <div class="row g-4" id="avatarGrid">
+                    {% for avatar in avatars %}
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <img src="{{ avatar.preview_image_url }}" class="card-img-top" alt="{{ avatar.avatar_name }}">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ avatar.avatar_name }}</h5>
+                                <p class="card-text">Gender: {{ avatar.gender }}</p>
+                                {% if avatar.preview_video_url %}
+                                <a href="{{ avatar.preview_video_url }}" class="btn btn-outline-primary mb-2" target="_blank">Watch Preview</a>
+                                {% endif %}
+                                <a href="/submit?avatar={{ avatar.avatar_id }}" class="btn btn-primary d-block">Use This Avatar</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if total_pages > 1 %}
+                <div class="pagination-container d-flex justify-content-center">
+                    <nav aria-label="Avatar navigation">
+                        <ul class="pagination">
+                            {% if current_page > 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('avatars', page=current_page-1) }}">&laquo; Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for p in range(1, total_pages + 1) %}
+                            <li class="page-item {% if p == current_page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('avatars', page=p) }}">{{ p }}</a>
+                            </li>
+                            {% endfor %}
+
+                            {% if current_page < total_pages %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('avatars', page=current_page+1) }}">Next &raquo;</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info" role="alert">
+                    No avatars available at this time.
+                </div>
+            {% endif %}
+
+            {% if talking_photos %}
+                <!-- Talking Photos Section -->
+                <h2 class="mb-4 mt-5">Talking Photos</h2>
+                <div class="row g-4" id="talkingPhotosGrid">
+                    {% for photo in talking_photos %}
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <img src="{{ photo.preview_image_url }}" class="card-img-top" alt="{{ photo.talking_photo_name }}">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ photo.talking_photo_name }}</h5>
+                                <a href="/submit?photo={{ photo.talking_photo_id }}" class="btn btn-primary d-block">Use This Photo</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

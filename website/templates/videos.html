@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Influencer - My Videos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .video-card {
+            transition: transform 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+        }
+        .video-thumbnail {
+            position: relative;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background-color: #f8f9fa;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+        .video-thumbnail img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .default-thumbnail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
+            opacity: 0.8;
+        }
+        .video-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .status-processing {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .status-completed {
+            background-color: #28a745;
+            color: #fff;
+        }
+        .status-failed {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        .video-duration {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        .refresh-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">AI Influencer</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/avatars">Avatars</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/submit">Create Video</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/videos">My Videos</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>My Videos</h2>
+            <a href="/submit" class="btn btn-primary">Create New Video</a>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <div class="row g-4">
+            {% for video in videos %}
+            <div class="col-md-4">
+                <div class="card video-card h-100" data-video-id="{{ video.id }}" data-status="{{ video.status.lower() }}">
+                    <div class="video-thumbnail">
+                        {% if video.thumbnail_url %}
+                        <img src="{{ video.thumbnail_url }}" alt="{{ video.name or 'Video Thumbnail' }}">
+                        {% else %}
+                        <img src="{{ url_for('static', filename='default-thumbnail.svg') }}" alt="Default Thumbnail" class="default-thumbnail">
+                        {% endif %}
+                        
+                        <span class="video-status status-{{ video.status.lower() }}">
+                            {{ video.status }}
+                        </span>
+                        
+                        {% if video.duration %}
+                        <span class="video-duration">{{ video.duration }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">
+                                <span class="video-title" data-video-id="{{ video.id }}">{{ video.name or 'Untitled Video' }}</span>
+                                <button class="btn btn-sm btn-link edit-title-btn" onclick="startEditingTitle('{{ video.id }}')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                                    </svg>
+                                </button>
+                            </h5>
+                        </div>
+                        <p class="card-text">
+                            <small class="text-muted">Created: {{ video.created_at }}</small>
+                        </p>
+                        {% if video.status.lower() == 'completed' %}
+                        <a href="{{ url_for('play_video', video_id=video.id) }}" class="btn btn-primary action-button" target="_blank">Watch Video</a>
+                        {% elif video.status.lower() == 'processing' %}
+                        <a href="{{ url_for('play_video', video_id=video.id) }}" class="btn btn-warning action-button" target="_blank">Watch Video</a>
+                        {% else %}
+                        <button class="btn btn-danger action-button" disabled>Failed</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info" role="alert">
+                    No videos found. <a href="/submit">Create your first video!</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <button class="btn btn-primary rounded-circle refresh-button" onclick="location.reload()" title="Refresh videos">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+        </svg>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Title editing functions
+        function startEditingTitle(videoId) {
+            const titleSpan = document.querySelector(`.video-title[data-video-id="${videoId}"]`);
+            const currentTitle = titleSpan.textContent;
+            
+            // Create input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentTitle;
+            input.className = 'form-control form-control-sm';
+            input.style.width = '200px';
+            
+            // Create save button
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn btn-sm btn-success ms-2';
+            saveBtn.innerHTML = 'Save';
+            saveBtn.onclick = () => saveTitle(videoId, input.value);
+            
+            // Create cancel button
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn btn-sm btn-secondary ms-2';
+            cancelBtn.innerHTML = 'Cancel';
+            cancelBtn.onclick = () => cancelEditing(videoId, currentTitle);
+            
+            // Create button container
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'd-inline-block';
+            btnContainer.appendChild(saveBtn);
+            btnContainer.appendChild(cancelBtn);
+            
+            // Replace title with input and buttons
+            titleSpan.innerHTML = '';
+            titleSpan.appendChild(input);
+            titleSpan.appendChild(btnContainer);
+            
+            // Focus input
+            input.focus();
+            input.select();
+            
+            // Hide edit button
+            const editBtn = titleSpan.nextElementSibling;
+            if (editBtn) editBtn.style.display = 'none';
+        }
+        
+        async function saveTitle(videoId, newTitle) {
+            try {
+                const response = await fetch(`/update_video_details/${videoId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `title=${encodeURIComponent(newTitle)}`
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const titleSpan = document.querySelector(`.video-title[data-video-id="${videoId}"]`);
+                    titleSpan.innerHTML = data.title;
+                    
+                    // Show edit button
+                    const editBtn = titleSpan.nextElementSibling;
+                    if (editBtn) editBtn.style.display = '';
+                } else {
+                    alert(data.error || 'Failed to update title');
+                    cancelEditing(videoId, newTitle);
+                }
+            } catch (error) {
+                console.error('Error saving title:', error);
+                alert('Failed to save title');
+                cancelEditing(videoId, newTitle);
+            }
+        }
+        
+        function cancelEditing(videoId, originalTitle) {
+            const titleSpan = document.querySelector(`.video-title[data-video-id="${videoId}"]`);
+            titleSpan.innerHTML = originalTitle;
+            
+            // Show edit button
+            const editBtn = titleSpan.nextElementSibling;
+            if (editBtn) editBtn.style.display = '';
+        }
+
+        // Function to update a single video's status
+        async function updateVideoStatus(videoId) {
+            try {
+                const response = await fetch(`/check_video_status/${videoId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Update status badge
+                    const statusBadge = document.querySelector(`[data-video-id="${videoId}"] .video-status`);
+                    if (statusBadge) {
+                        statusBadge.textContent = data.status;
+                        statusBadge.className = `video-status status-${data.status.toLowerCase()}`;
+                    }
+                    
+                    // Update button
+                    const actionButton = document.querySelector(`[data-video-id="${videoId}"] .action-button`);
+                    if (actionButton) {
+                        if (data.status === 'COMPLETED') {
+                            actionButton.href = `/play_video/${videoId}`;
+                            actionButton.className = 'btn btn-primary action-button';
+                            actionButton.textContent = 'Watch Video';
+                            actionButton.disabled = false;
+                        } else if (data.status === 'PROCESSING') {
+                            actionButton.href = `/play_video/${videoId}`;
+                            actionButton.className = 'btn btn-warning action-button';
+                            actionButton.textContent = 'Watch Video';
+                            actionButton.disabled = false;
+                        } else {
+                            actionButton.className = 'btn btn-danger action-button';
+                            actionButton.textContent = 'Failed';
+                            actionButton.disabled = true;
+                        }
+                    }
+                    
+                    // Continue refreshing if still processing
+                    return data.status === 'PROCESSING';
+                }
+                return false;
+            } catch (error) {
+                console.error('Error updating video status:', error);
+                return false;
+            }
+        }
+
+        // Function to update all processing videos
+        async function updateProcessingVideos() {
+            const processingVideos = document.querySelectorAll('.video-card[data-status="PROCESSING"]');
+            
+            for (const videoCard of processingVideos) {
+                const videoId = videoCard.getAttribute('data-video-id');
+                const shouldContinue = await updateVideoStatus(videoId);
+                
+                if (!shouldContinue) {
+                    videoCard.setAttribute('data-status', 'COMPLETED');
+                }
+            }
+            
+            // Schedule next update if there are still processing videos
+            const remainingProcessing = document.querySelectorAll('.video-card[data-status="PROCESSING"]').length;
+            if (remainingProcessing > 0) {
+                setTimeout(updateProcessingVideos, 5000); // Check every 5 seconds
+            }
+        }
+
+        // Start updating processing videos when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            updateProcessingVideos();
+        });
+    </script>
+</body>
+</html>

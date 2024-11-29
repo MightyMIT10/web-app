@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Influencer - Create Video</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">AI Influencer</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/avatars">Avatars</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/submit">Create Video</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="mb-4">Create AI Video</h2>
+
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        {% if success %}
+        <div class="alert alert-success" role="alert">
+            Video created successfully! <a href="{{ video.url }}" target="_blank">View Video</a>
+        </div>
+        {% endif %}
+
+        <form method="POST" class="needs-validation" novalidate>
+            <div class="mb-3">
+                <label for="avatar" class="form-label">Select Avatar</label>
+                <select class="form-select" id="avatar" name="avatar_id" required>
+                    <option value="">Choose an avatar...</option>
+                    {% for avatar in avatars %}
+                    <option value="{{ avatar.avatar_id }}" {% if selected_avatar_id == avatar.avatar_id %}selected{% endif %}>
+                        {{ avatar.avatar_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+                    Please select an avatar.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="script" class="form-label">Script</label>
+                <textarea class="form-control" id="script" name="input_text" rows="4" required
+                    placeholder="Enter what you want the avatar to say..."></textarea>
+                <div class="invalid-feedback">
+                    Please enter a script.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="voice" class="form-label">Voice Style</label>
+                <select class="form-select" id="voice" name="voice_id" required>
+                    <option value="ff2ecc8fbdef4273a28bed7b5e35bb57">Default Voice</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="dimension" class="form-label">Video Dimension</label>
+                <select class="form-select" id="dimension" name="dimension" required>
+                    <option value="1920x1080">1920x1080 (Full HD)</option>
+                    <option value="1280x720">1280x720 (HD)</option>
+                </select>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="caption" name="caption">
+                <label class="form-check-label" for="caption">
+                    Enable Captions
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create Video</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form validation
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    </script>
+</body>
+</html>
